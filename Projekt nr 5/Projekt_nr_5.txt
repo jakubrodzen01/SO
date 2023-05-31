@@ -1,0 +1,43 @@
+Projekt nr 5.
+Wykorzystując potoki nazwane (fifo) należy zaimplementować zadanie typu klient-serwer z
+możliwością obsługi wielu klientów jednocześnie.
+Projekt składa się z dwóch programów uruchamianych niezależnie: serwera i klienta:
+• [s] serwer tworzy swoje FIFO, otwiera je w trybie tylko do odczytu i blokuje się;
+• [s] pozostaje w tym stanie do momentu aż połączy się z nim klient, otwierając to samo FIFO do
+zapisu;
+• [s] serwer odblokuje się i wykona funkcję sleep();
+• [k] po otwarciu FIFO serwera każdy klient tworzy własne FIFO o unikatowej nazwie, przeznaczone
+do odczytywania danych zwracanych przez serwer;
+• [k] klient przesyła dane do serwera (blokując się jeżeli potok jest pełny albo serwer nadal uśpiony),
+dane umieszczane np. w strukturze o składowych jak w przykładzie poniżej;
+• [k] klient blokuje się na odczycie własnego potoku, oczekując na odpowiedź serwera;
+• [s] po otrzymaniu danych od klienta serwer przetwarza je (zamienia wszystkie litery w wiadomości
+na duże), otwiera FIFO klienta do zapisu (odblokowując w ten sposób klienta);
+• [s] zapisuje przetworzone dane;
+• [k] po odblokowaniu klient może odczytać ze swojego potoku dane zapisane przez serwer;
+• cały proces powtarza się dopóki ostatni klient nie zamknie potoku serwera, wówczas funkcja read()
+w serwerze zwróci 0;
+Przykładowa struktura (do przekazania przez łącze nazwane):
+struct dane_do_przekazania {
+ pid_t pid_klienta;
+ char dane[MAX];
+ };
+Fragmenty programu klienta:
+struct dane_do_przekazania moje_dane;
+.....
+fifo_serwera_dp = open(NAZWA_FIFO_SERWERA, O_WRONLY);
+write(fifo_serwera_dp, &moje_dane, sizeof(moje_dane));
+.....
+mkfifo(fifo_klienta, 0777)
+fifo_klienta_dp = open (fifo_klienta, O_RDONLY);
+read (fifo_klienta_dp, &moje_dane, sizeof(moje_dane))
+Fragmenty programu serwera:
+struct dane_do_przekazania moje_dane;
+.....
+mkfifo(NAZWA_FIFO_SERWERA, 0777);
+fifo_serwera_fd = open(NAZWA_FIFO_SERWERA, O_RDONLY);
+.....
+odczyt_res = read(fifo_serwera_fd, &moje_dane, sizeof(moje_dane));
+.....
+fifo_klienta_fd = open(fifo_klienta, O_WRONLY);
+write(fifo_klienta_fd, &moje_dane, sizeof(moje_dane));
